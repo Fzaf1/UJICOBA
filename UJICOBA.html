@@ -1,0 +1,1907 @@
+<!DOCTYPE html>
+<html lang="id">
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#5a67d8" />
+  <!-- Tambahkan icon untuk shortcut -->
+  <link rel="icon" href="icon-192.png" sizes="192x192" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <script>
+    // Register service worker untuk offline
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js");
+      });
+    }
+  </script>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Aplikasi Manajemen Keuangan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        margin: 0;
+        font-family: "Segoe UI", Arial, sans-serif;
+        color: #222;
+      }
+      .container {
+        max-width: 430px;
+        margin: 40px auto;
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        padding: 2rem 1.5rem 1.5rem 1.5rem;
+      }
+      h1 {
+        text-align: center;
+        color: #5a67d8;
+        margin-bottom: 1.2rem;
+        font-size: 1.35rem;
+        letter-spacing: 1px;
+      }
+      .saldo-box {
+        background: #2563eb;
+        color: #fff;
+        border-radius: 16px;
+        padding: 1rem 1.2rem;
+        margin-bottom: 1.2rem;
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .saldo-label {
+        font-size: 1rem;
+        opacity: 0.85;
+      }
+      .saldo-value {
+        font-size: 1.6rem;
+        font-weight: bold;
+        margin-top: 0.2rem;
+        letter-spacing: 1px;
+      }
+      .kategori-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.7rem;
+        margin-bottom: 1.2rem;
+      }
+      .kategori-card {
+        background: #f1f5f9;
+        border-radius: 12px;
+        padding: 0.7rem 0.3rem;
+        text-align: center;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 0;
+      }
+      .kategori-card .icon {
+        font-size: 1.7rem;
+        margin-bottom: 0.2rem;
+      }
+      .kategori-card .label {
+        font-size: 0.97rem;
+        color: #555;
+        margin-bottom: 0.1rem;
+        white-space: normal; /* Perbaiki agar teks panjang turun ke bawah */
+        overflow: visible;
+        text-overflow: unset;
+        max-width: 90px;
+        word-break: break-word;
+        line-height: 1.1;
+        min-height: 2.2em; /* Jaga agar tinggi kartu konsisten */
+        display: block;
+      }
+      .kategori-card .value {
+        font-size: 1.08rem;
+        font-weight: bold;
+        color: #222;
+      }
+      .kategori-card.income .icon {
+        color: #38a169;
+      }
+      .kategori-card.expense-makan .icon {
+        color: #f56565;
+      }
+      .kategori-card.expense-transportasi .icon {
+        color: #ed8936;
+      }
+      .kategori-card.expense-tagihan .icon {
+        color: #ecc94b;
+      }
+      .kategori-card.saving .icon {
+        color: #3182ce;
+      }
+      .kategori-card.emergency .icon {
+        color: #d69e2e;
+      }
+      form,
+      .limits-form {
+        display: flex;
+        flex-direction: column;
+        gap: 0.7rem;
+        margin-bottom: 1.2rem;
+      }
+      input,
+      select,
+      button {
+        padding: 0.7rem;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        font-size: 1rem;
+      }
+      button {
+        background: #5a67d8;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      button:hover {
+        background: #434190;
+      }
+      .filter-bar {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        align-items: center;
+      }
+      .filter-bar select {
+        flex: 1;
+      }
+      .diagram {
+        margin: 1.2rem 0 0.7rem 0;
+        background: #f1f5f9;
+        border-radius: 10px;
+        padding: 1rem;
+      }
+      .bar-group {
+        margin-bottom: 0.7rem;
+      }
+      .bar-label {
+        font-size: 0.95rem;
+        margin-bottom: 0.2rem;
+        display: flex;
+        justify-content: space-between;
+      }
+      .bar-bg {
+        background: #e2e8f0;
+        border-radius: 8px;
+        height: 18px;
+        overflow: hidden;
+        position: relative;
+      }
+      .bar {
+        height: 100%;
+        border-radius: 8px;
+        transition: width 0.5s;
+      }
+      .bar.makan {
+        background: #f56565;
+      }
+      .bar.transportasi {
+        background: #ed8936;
+      }
+      .bar.tagihan {
+        background: #ecc94b;
+      }
+      .bar.gaji {
+        background: #38a169;
+      }
+      .bar.saving {
+        background: #3182ce;
+      }
+      .bar.emergency {
+        background: #d69e2e;
+      }
+      .bar.over {
+        background: #e53e3e;
+      }
+      .limit-warning {
+        color: #e53e3e;
+        font-size: 0.95rem;
+        margin-top: 0.2rem;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        max-height: 180px;
+        overflow-y: auto;
+      }
+      li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f7fafc;
+        margin-bottom: 0.5rem;
+        padding: 0.7rem 1rem;
+        border-radius: 8px;
+        font-size: 1rem;
+        border-left: 5px solid #a0aec0;
+      }
+      li.income {
+        border-left-color: #38a169;
+      }
+      li.expense {
+        border-left-color: #e53e3e;
+      }
+      li.saving {
+        border-left-color: #3182ce;
+      }
+      li.emergency {
+        border-left-color: #d69e2e;
+      }
+      .delete-btn {
+        background: none;
+        border: none;
+        color: #e53e3e;
+        font-size: 1.2rem;
+        cursor: pointer;
+        margin-left: 0.5rem;
+      }
+      @media (max-width: 500px) {
+        .container {
+          margin: 0.5rem;
+          padding: 0.7rem;
+          border-radius: 0;
+          box-shadow: none;
+        }
+        h1 {
+          font-size: 1.05rem;
+          margin-bottom: 0.7rem;
+        }
+        .saldo-box {
+          flex-direction: column;
+          align-items: flex-start;
+          padding: 0.7rem 0.8rem;
+          border-radius: 10px;
+          gap: 0.5rem;
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          margin-top: -0.5rem;
+          margin-bottom: 0.7rem;
+        }
+        .kategori-grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 0.5rem;
+          margin-bottom: 0.7rem;
+          overflow-x: auto;
+          min-width: 0;
+        }
+        .kategori-card {
+          padding: 0.5rem 0.1rem;
+          min-width: 0;
+          border-radius: 8px;
+          font-size: 0.95rem;
+          min-height: 70px;
+          cursor: pointer;
+          user-select: none;
+          transition: background 0.15s;
+        }
+        .kategori-card:active {
+          background: #e0e7ff;
+        }
+        .kategori-card .icon {
+          font-size: 1.2rem;
+        }
+        .kategori-card .label {
+          font-size: 0.85rem;
+          max-width: 48px;
+        }
+        .kategori-card .value {
+          font-size: 0.95rem;
+        }
+        .filter-bar {
+          flex-direction: column;
+          gap: 0.3rem;
+          margin-bottom: 0.7rem;
+        }
+        .filter-bar label {
+          font-size: 0.95rem;
+        }
+        .diagram {
+          padding: 0.5rem;
+          border-radius: 7px;
+          margin: 0.7rem 0 0.5rem 0;
+          font-size: 0.95rem;
+          overflow-x: auto;
+        }
+        #ai-info {
+          font-size: 0.98rem !important;
+          padding: 0.6rem 0.7rem !important;
+          margin: 0.5rem 0 !important;
+          word-break: break-word;
+        }
+        ul,
+        #mutasiList,
+        #mutasiListInner {
+          max-height: 120px !important;
+          font-size: 0.95rem;
+        }
+        li,
+        #mutasiListInner li {
+          font-size: 0.95rem !important;
+          padding: 0.5rem 0.5rem !important;
+          margin-bottom: 0.3rem !important;
+          border-radius: 6px !important;
+        }
+        input,
+        select,
+        button {
+          font-size: 1rem;
+          padding: 0.6rem 0.7rem;
+          min-height: 40px;
+        }
+        button {
+          font-size: 1.05rem;
+          min-height: 42px;
+        }
+        #limitModal > div,
+        #mutasiModal > div {
+          max-width: 99vw !important;
+          width: 99vw !important;
+          padding: 0.6rem !important;
+          border-radius: 10px !important;
+          min-height: unset !important;
+          max-height: 92vh !important;
+        }
+        #mutasiTitle {
+          font-size: 1rem !important;
+          margin-bottom: 0.5rem !important;
+        }
+        #mutasiListInner .mutasi-li {
+          padding: 0.5rem 0.7rem 0.5rem 0.6rem !important;
+          font-size: 0.95em !important;
+          margin-bottom: 0.3rem !important;
+          border-radius: 7px !important;
+          min-height: 40px !important;
+        }
+        #mutasiListInner .mutasi-title {
+          font-size: 1em !important;
+        }
+        #mutasiListInner .mutasi-amount {
+          font-size: 0.95em !important;
+        }
+        #mutasiListInner .mutasi-date {
+          font-size: 0.85em !important;
+        }
+        #mutasiListInner {
+          max-height: 38vh !important;
+          overflow-y: auto !important;
+        }
+        #mutasiList {
+          max-height: 48vh !important;
+          overflow-y: auto !important;
+          padding-bottom: 0.2rem !important;
+        }
+        #mutasiModal button,
+        #limitModal button {
+          font-size: 1.1rem !important;
+          top: 6px !important;
+          right: 10px !important;
+        }
+        /* Perbaikan agar input tidak terlalu kecil */
+        input[type="date"] {
+          font-size: 1rem;
+        }
+      }
+      /* Tambahkan agar mutasi di modal lebih rapi dan responsif */
+      #mutasiListInner .mutasi-li {
+        background: #f7fafc;
+        margin-bottom: 0.7rem;
+        padding: 0.8rem 1rem 0.7rem 0.9rem;
+        border-radius: 13px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+        border-left: 5px solid #e53e3e;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        transition: background 0.2s;
+        position: relative;
+        min-height: 60px;
+      }
+      #mutasiListInner .mutasi-li.income {
+        border-left-color: #38a169;
+      }
+      #mutasiListInner .mutasi-li.saving {
+        border-left-color: #3182ce;
+      }
+      #mutasiListInner .mutasi-li.emergency {
+        border-left-color: #d69e2e;
+      }
+      #mutasiListInner .mutasi-li:hover {
+        background: #e9ecef;
+      }
+      #mutasiListInner .mutasi-title {
+        font-weight: 600;
+        color: #222;
+        font-size: 1.07em;
+        margin-bottom: 2px;
+        word-break: break-word;
+      }
+      #mutasiListInner .mutasi-amount {
+        font-size: 0.98em;
+        color: #e53e3e;
+        margin-bottom: 2px;
+        font-weight: 500;
+      }
+      #mutasiListInner .mutasi-li.income .mutasi-amount {
+        color: #38a169;
+      }
+      #mutasiListInner .mutasi-li.saving .mutasi-amount {
+        color: #3182ce;
+      }
+      #mutasiListInner .mutasi-li.emergency .mutasi-amount {
+        color: #d69e2e;
+      }
+      #mutasiListInner .mutasi-date {
+        font-size: 0.89em;
+        color: #888;
+        margin-top: 1px;
+        letter-spacing: 0.2px;
+      }
+
+      @media (max-width: 500px) {
+        .saldo-box {
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          margin-top: -0.5rem;
+          margin-bottom: 0.7rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Manajemen Keuangan</h1>
+      <div class="saldo-box">
+        <div>
+          <div class="saldo-label">Saldo Rekening Utama</div>
+          <div class="saldo-value" id="saldoUtama">Rp0</div>
+        </div>
+        <button
+          id="toggleSaldo"
+          style="
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            opacity: 0.7;
+            padding: 0 0.3rem;
+          "
+          aria-label="Tampilkan/sembunyikan saldo"
+        >
+          <span id="eyeIcon">👁️</span>
+        </button>
+      </div>
+      <div class="kategori-grid">
+        <div class="kategori-card income" onclick="filterByCategory('income')">
+          <div class="icon">💰</div>
+          <div class="label">Gaji</div>
+          <div class="value" id="income">Rp0</div>
+        </div>
+        <div
+          class="kategori-card expense-makan"
+          onclick="filterByCategory('expense-makan')"
+        >
+          <div class="icon">🍔</div>
+          <div class="label">Makan</div>
+          <div class="value" id="makan">Rp0</div>
+        </div>
+        <div
+          class="kategori-card expense-transportasi"
+          onclick="filterByCategory('expense-transportasi')"
+        >
+          <div class="icon">🚌</div>
+          <div class="label">Transportasi</div>
+          <div class="value" id="transportasi">Rp0</div>
+        </div>
+        <div
+          class="kategori-card expense-tagihan"
+          onclick="filterByCategory('expense-tagihan')"
+        >
+          <div class="icon">💡</div>
+          <div class="label">Tagihan</div>
+          <div class="value" id="tagihan">Rp0</div>
+        </div>
+        <div class="kategori-card saving" onclick="filterByCategory('saving')">
+          <div class="icon">🏦</div>
+          <div class="label">Menabung</div>
+          <div class="value" id="saving">Rp0</div>
+        </div>
+        <div
+          class="kategori-card emergency"
+          onclick="filterByCategory('emergency')"
+        >
+          <div class="icon">🚨</div>
+          <div class="label">Dana Darurat</div>
+          <div class="value" id="emergency">Rp0</div>
+        </div>
+      </div>
+      <!-- Filter tambahan -->
+      <div class="filter-bar">
+        <label for="filter">Filter:</label>
+        <select id="filter">
+          <option value="all">Semua</option>
+          <option value="expense-makan">Makan</option>
+          <option value="expense-transportasi">Transportasi</option>
+          <option value="expense-tagihan">Tagihan</option>
+          <option value="saving">Menabung</option>
+          <option value="emergency">Dana Darurat</option>
+          <option value="income">Gaji</option>
+        </select>
+        <select id="filter-type">
+          <option value="all">Semua</option>
+          <option value="expense">Pengeluaran</option>
+          <option value="income">Pendapatan</option>
+        </select>
+        <select id="filter-date">
+          <option value="all">Semua Waktu</option>
+          <option value="today">Hari Ini</option>
+          <option value="month">Bulan Ini</option>
+          <option value="3months">3 Bulan Terakhir</option>
+        </select>
+      </div>
+      <!-- Tambahkan form input transaksi di atas filter-bar -->
+      <form id="form" style="margin-bottom: 1rem">
+        <input type="text" id="desc" placeholder="Deskripsi" required />
+        <input type="number" id="amount" placeholder="Jumlah (Rp)" required />
+        <input type="date" id="date" required />
+        <select id="type">
+          <option value="income">Gaji</option>
+          <option value="expense-makan">Makan</option>
+          <option value="expense-transportasi">Transportasi</option>
+          <option value="expense-tagihan">Tagihan</option>
+          <option value="saving">Menabung</option>
+          <option value="emergency">Dana Darurat</option>
+        </select>
+        <button type="submit">Tambah Transaksi</button>
+      </form>
+      <!-- Tambahkan tombol ke halaman limit di dashboard utama -->
+      <div style="text-align: right; margin-bottom: 1rem">
+        <button
+          onclick="openLimitModal()"
+          style="
+            background: #ecc94b;
+            color: #222;
+            border: none;
+            padding: 0.5rem 1.1rem;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+          "
+        >
+          Atur Limit Pengeluaran
+        </button>
+      </div>
+      <!-- Hapus/komentari form limit lama di dashboard utama -->
+      <!--
+      <form class="limits-form" id="limits-form" style="margin-bottom: 1rem">
+        <label><b>Limit Pengeluaran per Bulan:</b></label>
+        <input
+          type="number"
+          id="limit-makan"
+          placeholder="Limit Makan (Rp)"
+          min="0"
+        />
+        <input
+          type="number"
+          id="limit-transportasi"
+          placeholder="Limit Transportasi (Rp)"
+          min="0"
+        />
+        <input
+          type="number"
+          id="limit-tagihan"
+          placeholder="Limit Tagihan (Rp)"
+          min="0"
+        />
+        <input
+          type="number"
+          id="limit-saving"
+          placeholder="Target Menabung (Rp)"
+          min="0"
+        />
+        <input
+          type="number"
+          id="limit-emergency"
+          placeholder="Target Dana Darurat (Rp)"
+          min="0"
+        />
+        <button type="submit">Simpan Limit</button>
+      </form>
+      -->
+      <!-- Tambahkan modal/subweb untuk pengaturan limit -->
+      <div
+        id="limitModal"
+        style="
+          display: none;
+          position: fixed;
+          z-index: 9999;
+          left: 0;
+          top: 0;
+          width: 100vw;
+          height: 100vh;
+          background: rgba(0, 0, 0, 0.25);
+          align-items: center;
+          justify-content: center;
+        "
+        onclick="if(event.target===this)closeLimitModal()"
+      >
+        <div
+          style="
+            background: #fff;
+            max-width: 400px;
+            width: 95vw;
+            border-radius: 16px;
+            padding: 1.2rem 1.2rem 1.2rem 1.2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+            position: relative;
+            min-height: 120px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+          "
+        >
+          <button
+            onclick="closeLimitModal()"
+            style="
+              position: absolute;
+              top: 10px;
+              right: 14px;
+              background: none;
+              border: none;
+              font-size: 1.5rem;
+              cursor: pointer;
+              color: #888;
+              line-height: 1;
+              width: 32px;
+              height: 32px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            "
+            aria-label="Tutup"
+            title="Tutup"
+          >
+            &times;
+          </button>
+          <h3
+            style="
+              text-align: center;
+              color: #b7791f;
+              margin-top: 0;
+              margin-bottom: 1rem;
+            "
+          >
+            Atur Limit Pengeluaran
+          </h3>
+          <form class="limits-form" id="limits-form-modal">
+            <input
+              type="number"
+              id="limit-makan-modal"
+              placeholder="Limit Makan (Rp)"
+              min="0"
+            />
+            <input
+              type="number"
+              id="limit-transportasi-modal"
+              placeholder="Limit Transportasi (Rp)"
+              min="0"
+            />
+            <input
+              type="number"
+              id="limit-tagihan-modal"
+              placeholder="Limit Tagihan (Rp)"
+              min="0"
+            />
+            <input
+              type="number"
+              id="limit-saving-modal"
+              placeholder="Target Menabung (Rp)"
+              min="0"
+            />
+            <input
+              type="number"
+              id="limit-emergency-modal"
+              placeholder="Target Dana Darurat (Rp)"
+              min="0"
+            />
+            <button type="submit" style="margin-top: 0.7rem">
+              Simpan Limit
+            </button>
+          </form>
+        </div>
+      </div>
+      <div class="diagram" id="diagram"></div>
+      <ul id="transactions"></ul>
+    </div>
+    <!-- Modal Mutasi Kategori -->
+    <div
+      id="mutasiModal"
+      style="
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.25);
+        align-items: center;
+        justify-content: center;
+      "
+      onclick="if(event.target===this)closeMutasiModal()"
+    >
+      <div
+        style="
+          background: #fff;
+          max-width: 400px;
+          width: 95vw;
+          border-radius: 16px;
+          padding: 1.2rem 1.2rem 1.2rem 1.2rem;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+          position: relative;
+          min-height: 120px;
+          max-height: 90vh;
+          display: flex;
+          flex-direction: column;
+        "
+      >
+        <button
+          onclick="closeMutasiModal()"
+          style="
+            position: absolute;
+            top: 10px;
+            right: 14px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #888;
+            line-height: 1;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          "
+          aria-label="Tutup"
+          title="Tutup"
+        >
+          &times;
+        </button>
+        <button
+          onclick="closeMutasiModal()"
+          style="
+            position: absolute;
+            top: 10px;
+            left: 14px;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            color: #5a67d8;
+            font-weight: bold;
+            padding: 4px 10px 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            line-height: 1;
+          "
+          aria-label="Kembali"
+          title="Kembali"
+        >
+          <span style="font-size: 1.2em; line-height: 1">&#8592;</span>
+          <span style="font-size: 1em; line-height: 1">Kembali</span>
+        </button>
+        <h3
+          id="mutasiTitle"
+          style="
+            margin-top: 0;
+            text-align: center;
+            font-size: 1.1rem;
+            color: #5a67d8;
+            margin-bottom: 0.7rem;
+          "
+        ></h3>
+        <ul
+          id="mutasiList"
+          style="
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex: 1 1 auto;
+            overflow-y: auto;
+            max-height: none;
+          "
+        >
+          <div id="mutasiListInner"></div>
+        </ul>
+      </div>
+    </div>
+    <button
+      id="fab-add"
+      aria-label="Tambah Transaksi"
+      style="
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 10001;
+        background: #5a67d8;
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 54px;
+        height: 54px;
+        box-shadow: 0 4px 16px rgba(90, 103, 216, 0.18);
+        font-size: 2.1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.2s;
+        display: none;
+      "
+    >
+      +
+    </button>
+    <div
+      id="toast"
+      style="
+        display: none;
+        position: fixed;
+        left: 50%;
+        bottom: 30px;
+        transform: translateX(-50%);
+        background: #38a169;
+        color: #fff;
+        padding: 0.8rem 1.5rem;
+        border-radius: 30px;
+        font-size: 1rem;
+        z-index: 10002;
+        box-shadow: 0 2px 8px rgba(56, 161, 105, 0.13);
+        transition: opacity 0.3s;
+      "
+    ></div>
+    <script>
+      // Tampilkan FAB hanya di mobile
+      function updateFAB() {
+        document.getElementById("fab-add").style.display =
+          window.innerWidth <= 500 ? "flex" : "none";
+      }
+      window.addEventListener("resize", updateFAB);
+      window.addEventListener("DOMContentLoaded", updateFAB);
+      // Scroll ke form saat FAB diklik
+      document.getElementById("fab-add").onclick = function () {
+        document.getElementById("form").scrollIntoView({ behavior: "smooth" });
+        document.getElementById("desc").focus();
+      };
+      function showToast(msg) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.style.display = "block";
+        t.style.opacity = "1";
+        setTimeout(() => {
+          t.style.opacity = "0";
+        }, 1700);
+        setTimeout(() => {
+          t.style.display = "none";
+        }, 2000);
+      }
+      // Panggil showToast setelah tambah transaksi
+      const oldFormSubmit = document.getElementById("form").onsubmit;
+      document.getElementById("form").onsubmit = function (e) {
+        oldFormSubmit.call(this, e);
+        if (!e.defaultPrevented) showToast("Transaksi berhasil ditambahkan!");
+      };
+    </script>
+    <script>
+      // Kategori dan warna
+      const categories = [
+        { key: "expense-makan", label: "Makan", bar: "makan" },
+        {
+          key: "expense-transportasi",
+          label: "Transportasi",
+          bar: "transportasi",
+        },
+        { key: "expense-tagihan", label: "Tagihan", bar: "tagihan" },
+        { key: "saving", label: "Menabung", bar: "saving" },
+        { key: "emergency", label: "Dana Darurat", bar: "emergency" },
+        { key: "income", label: "Gaji", bar: "gaji" },
+      ];
+
+      // Ambil data dari localStorage
+      let transactions = JSON.parse(
+        localStorage.getItem("transactions_v2") || "[]"
+      );
+      let limits = JSON.parse(localStorage.getItem("limits_v2") || "{}");
+
+      function formatRupiah(angka) {
+        return "Rp" + (angka || 0).toLocaleString("id-ID");
+      }
+
+      function getMonthYear(dateStr) {
+        const d = new Date(dateStr);
+        return d.getFullYear() + "-" + (d.getMonth() + 1);
+      }
+
+      // Filter mutasi berdasarkan kategori dari ikon
+      function filterByCategory(cat) {
+        showMutasiModal(cat);
+      }
+
+      // Modal mutasi kategori dengan desain lebih menarik
+      function showMutasiModal(cat) {
+        const catObj = categories.find((c) => c.key === cat);
+        const label = catObj ? catObj.label : cat;
+        const color =
+          cat === "income"
+            ? "#38a169"
+            : cat === "saving"
+            ? "#3182ce"
+            : cat === "emergency"
+            ? "#d69e2e"
+            : "#e53e3e";
+
+        // Header & filter
+        let filterHtml = `
+    <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:0.7rem;">
+      <div style="display:flex;align-items:center;gap:0.7rem;">
+        <span style="font-size:1.5rem;color:${color};">${
+          cat === "income"
+            ? "💰"
+            : cat === "saving"
+            ? "🏦"
+            : cat === "emergency"
+            ? "🚨"
+            : cat === "expense-makan"
+            ? "🍔"
+            : cat === "expense-transportasi"
+            ? "🚌"
+            : cat === "expense-tagihan"
+            ? "💡"
+            : "📄"
+        }</span>
+        <span style="font-weight:600;font-size:1.1rem;color:${color};">${label}</span>
+      </div>
+      <select id="mutasi-date" style="margin-top:0.7rem;padding:0.3rem 0.7rem;border-radius:8px;border:1px solid #d1d5db;">
+        <option value="all">Semua Waktu</option>
+        <option value="today">Hari Ini</option>
+        <option value="month">Bulan Ini</option>
+        <option value="3months">3 Bulan Terakhir</option>
+      </select>
+    </div>
+    <div id="mutasiTotal" style="text-align:center;font-weight:500;color:${color};margin-bottom:0.5rem;"></div>
+    <div id="mutasiListInner"></div>
+  `;
+        document.getElementById("mutasiList").innerHTML = filterHtml;
+        renderMutasiList(cat, "all");
+
+        document.getElementById("mutasi-date").onchange = function () {
+          renderMutasiList(cat, this.value);
+        };
+
+        document.getElementById("mutasiModal").style.display = "flex";
+      }
+
+      // List mutasi kategori dengan desain lebih informatif
+      function renderMutasiList(cat, dateFilter) {
+        const list = document.getElementById("mutasiListInner");
+        list.innerHTML = "";
+        let filtered = transactions.filter((t) => t.type === cat);
+
+        // Filter waktu
+        if (dateFilter !== "all") {
+          filtered = filtered.filter((t) => {
+            if (dateFilter === "today") return isToday(t.date);
+            if (dateFilter === "month") return isThisMonth(t.date);
+            if (dateFilter === "3months") return isLast3Months(t.date);
+            return true;
+          });
+        }
+
+        // Total mutasi kategori
+        const total = filtered.reduce((sum, t) => sum + t.amount, 0);
+        const totalText =
+          (cat === "income" ? "+" : "-") + formatRupiah(total) + " total";
+        document.getElementById("mutasiTotal").textContent =
+          filtered.length > 0 ? totalText : "";
+
+        if (filtered.length === 0) {
+          list.innerHTML =
+            '<li style="text-align:center;color:#888;padding:1.2rem 0;">Tidak ada mutasi</li>';
+        } else {
+          filtered.forEach((t) => {
+            let catClass = "";
+            if (cat === "income") catClass = "income";
+            else if (cat === "saving") catClass = "saving";
+            else if (cat === "emergency") catClass = "emergency";
+            else if (cat.startsWith("expense-")) catClass = "";
+            list.innerHTML += `
+        <li class="mutasi-li ${catClass}" style="border-left:5px solid ${
+              cat === "income"
+                ? "#38a169"
+                : cat === "saving"
+                ? "#3182ce"
+                : cat === "emergency"
+                ? "#d69e2e"
+                : "#e53e3e"
+            };">
+          <div class="mutasi-title">${t.desc}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span class="mutasi-amount" style="color:${
+              cat === "income"
+                ? "#38a169"
+                : cat === "saving"
+                ? "#3182ce"
+                : cat === "emergency"
+                ? "#d69e2e"
+                : "#e53e3e"
+            };">
+              ${cat === "income" ? "+" : "-"}${formatRupiah(t.amount)}
+            </span>
+            <span class="mutasi-date" style="font-size:0.93em;color:#888;">${
+              t.date
+            }</span>
+          </div>
+        </li>
+      `;
+          });
+        }
+      }
+
+      function closeMutasiModal() {
+        document.getElementById("mutasiModal").style.display = "none";
+        // Fokus kembali ke dashboard utama
+        document
+          .querySelector(".container")
+          .scrollIntoView({ behavior: "smooth" });
+      }
+
+      // Filter tambahan: pengeluaran/pendapatan & waktu
+      document.getElementById("filter-type").onchange = render;
+      document.getElementById("filter-date").onchange = render;
+
+      function isToday(dateStr) {
+        const d = new Date(dateStr),
+          now = new Date();
+        return (
+          d.getDate() === now.getDate() &&
+          d.getMonth() === now.getMonth() &&
+          d.getFullYear() === now.getFullYear()
+        );
+      }
+      function isThisMonth(dateStr) {
+        const d = new Date(dateStr),
+          now = new Date();
+        return (
+          d.getMonth() === now.getMonth() &&
+          d.getFullYear() === now.getFullYear()
+        );
+      }
+      function isLast3Months(dateStr) {
+        const d = new Date(dateStr),
+          now = new Date();
+        const threeMonthsAgo = new Date(
+          now.getFullYear(),
+          now.getMonth() - 2,
+          1
+        );
+        return d >= threeMonthsAgo && d <= now;
+      }
+
+      // Sembunyikan/tampilkan saldo utama
+      let saldoVisible = true;
+      const saldoUtamaEl = document.getElementById("saldoUtama");
+      const toggleBtn = document.getElementById("toggleSaldo");
+      const eyeIcon = document.getElementById("eyeIcon");
+      let lastSaldo = saldoUtamaEl.textContent;
+
+      function updateSaldoVisibility() {
+        if (saldoVisible) {
+          saldoUtamaEl.textContent = lastSaldo;
+          eyeIcon.textContent = "👁️";
+        } else {
+          saldoUtamaEl.textContent = "••••••••";
+          eyeIcon.textContent = "🙈";
+        }
+      }
+      toggleBtn.onclick = function () {
+        saldoVisible = !saldoVisible;
+        updateSaldoVisibility();
+      };
+
+      // Pastikan saldo tetap update saat render
+      function render() {
+        const ul = document.getElementById("transactions");
+        ul.innerHTML = "";
+        let income = 0,
+          makan = 0,
+          transportasi = 0,
+          tagihan = 0,
+          saving = 0,
+          emergency = 0;
+        const filter = document.getElementById("filter").value;
+        const filterType = document.getElementById("filter-type").value;
+        const filterDate = document.getElementById("filter-date").value;
+        let filtered = transactions;
+
+        // Filter kategori
+        if (filter !== "all") {
+          filtered = filtered.filter((t) => t.type === filter);
+        }
+        // Filter tipe pengeluaran/pendapatan
+        if (filterType !== "all") {
+          if (filterType === "expense") {
+            filtered = filtered.filter(
+              (t) =>
+                t.type.startsWith("expense") ||
+                t.type === "saving" ||
+                t.type === "emergency"
+            );
+          } else if (filterType === "income") {
+            filtered = filtered.filter((t) => t.type === "income");
+          }
+        }
+        // Filter tanggal
+        if (filterDate !== "all") {
+          filtered = filtered.filter((t) => {
+            if (filterDate === "today") return isToday(t.date);
+            if (filterDate === "month") return isThisMonth(t.date);
+            if (filterDate === "3months") return isLast3Months(t.date);
+            return true;
+          });
+        }
+
+        filtered.forEach((t, idx) => {
+          const li = document.createElement("li");
+          let cat = t.type;
+          let catClass = cat;
+          if (cat.startsWith("expense-")) catClass = "expense";
+          if (cat === "income") catClass = "income";
+          if (cat === "saving") catClass = "saving";
+          if (cat === "emergency") catClass = "emergency";
+          li.className = catClass;
+          li.innerHTML = `
+          <span>
+            <b>${
+              categories.find((c) => c.key === t.type)?.label || t.type
+            }</b> - ${t.desc}<br>
+            <small>${t.date}</small>
+          </span>
+          <span>
+            ${cat === "income" ? "+" : "-"}${formatRupiah(t.amount)}
+            <button class="delete-btn" onclick="deleteTransaction(${transactions.indexOf(
+              t
+            )})" title="Hapus">&#10005;</button>
+          </span>
+        `;
+          ul.appendChild(li);
+          if (cat === "income") income += t.amount;
+          else if (cat === "saving") saving += t.amount;
+          else if (cat === "emergency") emergency += t.amount;
+          else if (cat === "expense-makan") makan += t.amount;
+          else if (cat === "expense-transportasi") transportasi += t.amount;
+          else if (cat === "expense-tagihan") tagihan += t.amount;
+        });
+        document.getElementById("income").textContent = formatRupiah(income);
+        document.getElementById("makan").textContent = formatRupiah(makan);
+        document.getElementById("transportasi").textContent =
+          formatRupiah(transportasi);
+        document.getElementById("tagihan").textContent = formatRupiah(tagihan);
+        document.getElementById("saving").textContent = formatRupiah(saving);
+        document.getElementById("emergency").textContent =
+          formatRupiah(emergency);
+        // Saldo utama = income - semua pengeluaran + saving + emergency
+        const saldo =
+          income - (makan + transportasi + tagihan) + saving + emergency;
+        lastSaldo = formatRupiah(saldo);
+        updateSaldoVisibility();
+        renderDiagram();
+      }
+
+      function save() {
+        localStorage.setItem("transactions_v2", JSON.stringify(transactions));
+      }
+      function saveLimits() {
+        localStorage.setItem("limits_v2", JSON.stringify(limits));
+      }
+
+      document.getElementById("form").onsubmit = function (e) {
+        e.preventDefault();
+        const desc = document.getElementById("desc").value.trim();
+        const amount = parseInt(document.getElementById("amount").value);
+        const date = document.getElementById("date").value;
+        const type = document.getElementById("type").value;
+        if (!desc || isNaN(amount) || amount <= 0 || !date) return;
+        transactions.unshift({ desc, amount, type, date });
+        save();
+        render();
+        this.reset();
+        document.getElementById("desc").focus();
+      };
+
+      window.deleteTransaction = function (idx) {
+        if (confirm("Hapus transaksi ini?")) {
+          transactions.splice(idx, 1);
+          save();
+          render();
+        }
+      };
+
+      document.getElementById("filter").onchange = render;
+
+      // Limit form
+      document.getElementById("limits-form-modal").onsubmit = function (e) {
+        e.preventDefault();
+        limits["expense-makan"] =
+          parseInt(document.getElementById("limit-makan-modal").value) || 0;
+        limits["expense-transportasi"] =
+          parseInt(document.getElementById("limit-transportasi-modal").value) ||
+          0;
+        limits["expense-tagihan"] =
+          parseInt(document.getElementById("limit-tagihan-modal").value) || 0;
+        limits["saving"] =
+          parseInt(document.getElementById("limit-saving-modal").value) || 0;
+        limits["emergency"] =
+          parseInt(document.getElementById("limit-emergency-modal").value) || 0;
+        saveLimits();
+        renderDiagram();
+        closeLimitModal();
+        alert("Limit berhasil disimpan!");
+      };
+
+      // Set value limit form dari localStorage
+      window.onload = function () {
+        document.getElementById("limit-makan").value =
+          limits["expense-makan"] || "";
+        document.getElementById("limit-transportasi").value =
+          limits["expense-transportasi"] || "";
+        document.getElementById("limit-tagihan").value =
+          limits["expense-tagihan"] || "";
+        document.getElementById("limit-saving").value = limits["saving"] || "";
+        document.getElementById("limit-emergency").value =
+          limits["emergency"] || "";
+        render();
+      };
+
+      function renderDiagram() {
+        // Hitung total per kategori bulan ini
+        const now = new Date();
+        const monthKey = now.getFullYear() + "-" + (now.getMonth() + 1);
+        const perCat = {};
+        categories.forEach((cat) => (perCat[cat.key] = 0));
+        transactions.forEach((t) => {
+          if (getMonthYear(t.date) === monthKey) {
+            if (perCat[t.type] !== undefined) perCat[t.type] += t.amount;
+          }
+        });
+        // Render diagram
+        const diagram = document.getElementById("diagram");
+        diagram.innerHTML = "";
+        categories.forEach((cat) => {
+          if (cat.key === "income") return; // income tidak perlu limit
+          const total = perCat[cat.key] || 0;
+          const limit = limits[cat.key] || 0;
+          let percent = limit
+            ? Math.min(100, Math.round((total / limit) * 100))
+            : 0;
+          let over = limit && total > limit;
+          let barClass = cat.bar + (over ? " over" : "");
+          diagram.innerHTML += `
+        <div class="bar-group">
+          <div class="bar-label">
+            <span>${cat.label}</span>
+            <span>${formatRupiah(total)}${
+            limit ? " / " + formatRupiah(limit) : ""
+          } (${percent}%)</span>
+          </div>
+          <div class="bar-bg">
+            <div class="bar ${barClass}" style="width:${percent}%;"></div>
+          </div>
+          ${over ? `<div class="limit-warning">Melebihi limit!</div>` : ""}
+        </div>
+      `;
+        });
+      }
+
+      function closeMutasiModal() {
+        document.getElementById("mutasiModal").style.display = "none";
+      }
+
+      function openMutasiModal(cat) {
+        const title = categories.find((c) => c.key === cat)?.label || cat;
+        document.getElementById("mutasiTitle").textContent = "Mutasi " + title;
+        const ul = document.getElementById("mutasiList");
+        ul.innerHTML = "";
+        transactions.forEach((t) => {
+          if (t.type === cat) {
+            const li = document.createElement("li");
+            li.style.display = "flex";
+            li.style.justifyContent = "space-between";
+            li.style.alignItems = "center";
+            li.style.background = "#f7fafc";
+            li.style.marginBottom = "0.5rem";
+            li.style.padding = "0.7rem 1rem";
+            li.style.borderRadius = "8px";
+            li.style.fontSize = "1rem";
+            li.style.borderLeft = "5px solid #a0aec0";
+            if (cat === "income") {
+              li.style.borderLeftColor = "#38a169";
+            } else if (cat === "saving") {
+              li.style.borderLeftColor = "#3182ce";
+            } else if (cat === "emergency") {
+              li.style.borderLeftColor = "#d69e2e";
+            } else if (cat.startsWith("expense-")) {
+              li.style.borderLeftColor = "#e53e3e";
+            }
+            li.innerHTML = `
+            <span>
+              <b>${t.desc}</b><br>
+              <small>${t.date}</small>
+            </span>
+            <span>
+              ${cat === "income" ? "+" : "-"}${formatRupiah(t.amount)}
+            </span>
+          `;
+            ul.appendChild(li);
+          }
+        });
+        document.getElementById("mutasiModal").style.display = "flex";
+      }
+
+      // Fungsi buka/tutup modal limit
+      function openLimitModal() {
+        // Set value input dari localStorage
+        document.getElementById("limit-makan-modal").value =
+          limits["expense-makan"] || "";
+        document.getElementById("limit-transportasi-modal").value =
+          limits["expense-transportasi"] || "";
+        document.getElementById("limit-tagihan-modal").value =
+          limits["expense-tagihan"] || "";
+        document.getElementById("limit-saving-modal").value =
+          limits["saving"] || "";
+        document.getElementById("limit-emergency-modal").value =
+          limits["emergency"] || "";
+        document.getElementById("limitModal").style.display = "flex";
+      }
+      function closeLimitModal() {
+        document.getElementById("limitModal").style.display = "none";
+      }
+    </script>
+    <!-- AI kategori otomatis -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.18.0/dist/tf.min.js"></script>
+    <script>
+      // Fungsi AI sederhana: prediksi kategori dari deskripsi
+      function aiPredictCategory(desc) {
+        desc = desc.toLowerCase();
+        if (
+          desc.includes("nasi") ||
+          desc.includes("uduk") ||
+          desc.includes("grab food") ||
+          desc.includes("warmindo")
+        )
+          return "expense-makan";
+        if (
+          desc.includes("gojek") ||
+          desc.includes("grab") ||
+          desc.includes("kereta") ||
+          desc.includes("bensin") ||
+          desc.includes("ojek")
+        )
+          return "expense-transportasi";
+        if (
+          desc.includes("listrik") ||
+          desc.includes("paketan") ||
+          desc.includes("shoppe") ||
+          desc.includes("wifi") ||
+          desc.includes("tagihan") ||
+          desc.includes("pulsa")
+        )
+          return "expense-tagihan";
+        if (
+          desc.includes("tabung") ||
+          desc.includes("deposito") ||
+          desc.includes("nabung")
+        )
+          return "saving";
+        if (desc.includes("dana darurat") || desc.includes("emergency"))
+          return "emergency";
+        if (
+          desc.includes("gaji") ||
+          desc.includes("salary") ||
+          desc.includes("bonus") ||
+          desc.includes("uang masuk") ||
+          desc.includes("pendapatan")
+        )
+          return "income";
+        return "";
+      }
+
+      // Event: saat user mengetik deskripsi, AI akan menebak kategori
+      document.getElementById("desc").addEventListener("input", function () {
+        const pred = aiPredictCategory(this.value);
+        if (pred) document.getElementById("type").value = pred;
+      });
+
+      // ===================== FITUR AI/ML TAMBAHAN =====================
+
+      // 1. AI: Prediksi kategori otomatis (sudah ada, tetap dipakai)
+
+      // 2. AI: Saran nominal transaksi berdasarkan histori
+      function aiSuggestAmount(desc) {
+        desc = desc.toLowerCase();
+        // Cari transaksi serupa
+        let similar = transactions.filter(
+          (t) => t.desc.toLowerCase().includes(desc) && t.amount > 0
+        );
+        if (similar.length === 0) return "";
+        // Ambil rata-rata
+        let avg = Math.round(
+          similar.reduce((a, b) => a + b.amount, 0) / similar.length
+        );
+        return avg;
+      }
+
+      // 3. AI: Deteksi pengeluaran tidak biasa (anomaly detection sederhana)
+      function aiDetectAnomaly(amount, type) {
+        // Hitung rata-rata dan deviasi standar transaksi kategori ini
+        let data = transactions
+          .filter((t) => t.type === type)
+          .map((t) => t.amount);
+        if (data.length < 5) return false; // Data terlalu sedikit
+        let avg = data.reduce((a, b) => a + b, 0) / data.length;
+        let std = Math.sqrt(
+          data.map((x) => Math.pow(x - avg, 2)).reduce((a, b) => a + b, 0) /
+            data.length
+        );
+        // Jika lebih dari 2x deviasi standar, anggap anomali
+        return Math.abs(amount - avg) > 2 * std;
+      }
+
+      // 4. AI: Saran menabung otomatis jika saldo cukup
+      function aiSuggestSaving() {
+        // Jika saldo bulan ini > 1.5x rata-rata pengeluaran, sarankan menabung
+        let pengeluaran = transactions.filter(
+          (t) =>
+            t.type.startsWith("expense") ||
+            t.type === "saving" ||
+            t.type === "emergency"
+        );
+        if (pengeluaran.length < 5) return "";
+        let avg =
+          pengeluaran.reduce((a, b) => a + b.amount, 0) / pengeluaran.length;
+        let income = transactions
+          .filter((t) => t.type === "income")
+          .reduce((a, b) => a + b.amount, 0);
+        let pengeluaranTotal = pengeluaran.reduce((a, b) => a + b.amount, 0);
+        let saldo = income - pengeluaranTotal;
+        if (saldo > 1.5 * avg) {
+          return "Saldo Anda cukup besar, pertimbangkan untuk menabung bulan ini!";
+        }
+        return "";
+      }
+
+      // 5. AI: Reminder otomatis jika mendekati limit kategori
+      function aiLimitReminder() {
+        let now = new Date();
+        let monthKey = now.getFullYear() + "-" + (now.getMonth() + 1);
+        let reminders = [];
+        categories.forEach((cat) => {
+          if (cat.key === "income") return;
+          let total = transactions
+            .filter(
+              (t) => t.type === cat.key && getMonthYear(t.date) === monthKey
+            )
+            .reduce((a, b) => a + b.amount, 0);
+          let limit = limits[cat.key] || 0;
+          if (limit && total > 0.8 * limit && total < limit) {
+            reminders.push(
+              `Pengeluaran kategori ${cat.label} sudah mencapai ${Math.round(
+                (100 * total) / limit
+              )}% dari limit.`
+            );
+          }
+        });
+        return reminders;
+      }
+
+      // 6. AI: Saran kategori jika user sering salah pilih kategori
+      let aiWrongCategoryCount = 0;
+      document.getElementById("type").addEventListener("change", function () {
+        let desc = document.getElementById("desc").value;
+        let aiCat = aiPredictCategory(desc);
+        if (aiCat && aiCat !== this.value) {
+          aiWrongCategoryCount++;
+          if (aiWrongCategoryCount >= 3) {
+            alert(
+              "Sering terjadi perbedaan antara deskripsi dan kategori. Coba gunakan saran AI untuk kategori!"
+            );
+            aiWrongCategoryCount = 0;
+          }
+        }
+      });
+
+      // 7. AI: Saran otomatis isi nominal jika deskripsi mirip transaksi sebelumnya
+      document.getElementById("desc").addEventListener("input", function () {
+        const suggest = aiSuggestAmount(this.value);
+        if (suggest && !document.getElementById("amount").value) {
+          document.getElementById("amount").value = suggest;
+        }
+      });
+
+      // 8. AI: Tampilkan reminder dan saran di dashboard
+      function renderAIInfo() {
+        let info = [];
+        // Saran menabung
+        let saving = aiSuggestSaving();
+        if (saving) info.push("💡 " + saving);
+        // Reminder limit
+        let limits = aiLimitReminder();
+        limits.forEach((l) => info.push("⚠️ " + l));
+        // Tampilkan
+        let el = document.getElementById("ai-info");
+        if (!el) {
+          el = document.createElement("div");
+          el.id = "ai-info";
+          el.style.background = "#f1f5f9";
+          el.style.borderRadius = "10px";
+          el.style.padding = "0.7rem 1rem";
+          el.style.margin = "0.7rem 0";
+          el.style.color = "#444";
+          el.style.fontSize = "1rem";
+          document
+            .querySelector(".container")
+            .insertBefore(el, document.querySelector(".diagram"));
+        }
+        el.innerHTML = info.length ? info.join("<br>") : "";
+      }
+
+      // Panggil renderAIInfo setiap kali render
+      const oldRender = render;
+      render = function () {
+        oldRender();
+        renderAIInfo();
+      };
+
+      // 9. AI: Deteksi anomali saat submit transaksi
+      document.getElementById("form").addEventListener("submit", function () {
+        const desc = document.getElementById("desc").value;
+        const amount = parseInt(document.getElementById("amount").value);
+        const type = document.getElementById("type").value;
+        if (aiDetectAnomaly(amount, type)) {
+          setTimeout(() => {
+            alert(
+              "⚠️ Jumlah transaksi ini tidak biasa untuk kategori tersebut. Silakan cek kembali!"
+            );
+          }, 100);
+        }
+      });
+
+      // 10. AI: Prediksi hari pengeluaran terbesar (spending peak day)
+      function aiPeakSpendingDay() {
+        let days = {};
+        transactions.forEach((t) => {
+          if (t.type.startsWith("expense")) {
+            let day = new Date(t.date).getDay(); // 0=minggu, 1=senin, dst
+            days[day] = (days[day] || 0) + t.amount;
+          }
+        });
+        let maxDay = Object.keys(days).reduce(
+          (a, b) => (days[a] > days[b] ? a : b),
+          0
+        );
+        const hari = [
+          "Minggu",
+          "Senin",
+          "Selasa",
+          "Rabu",
+          "Kamis",
+          "Jumat",
+          "Sabtu",
+        ];
+        return days[maxDay]
+          ? `Hari pengeluaran terbesar Anda: <b>${hari[maxDay]}</b>`
+          : "";
+      }
+
+      // 11. AI: Deteksi pola pengeluaran bulanan (trend naik/turun)
+      function aiMonthlyTrend() {
+        let months = {};
+        transactions.forEach((t) => {
+          if (t.type.startsWith("expense")) {
+            let key = t.date.slice(0, 7); // yyyy-mm
+            months[key] = (months[key] || 0) + t.amount;
+          }
+        });
+        let keys = Object.keys(months).sort();
+        if (keys.length < 3) return "";
+        let last = months[keys[keys.length - 1]];
+        let prev = months[keys[keys.length - 2]];
+        if (last > prev)
+          return "⚠️ Pengeluaran bulan ini naik dibanding bulan lalu.";
+        if (last < prev)
+          return "👍 Pengeluaran bulan ini turun dibanding bulan lalu.";
+        return "";
+      }
+
+      // 12. AI: Saran kategori baru jika sering muncul deskripsi unik
+      function aiSuggestNewCategory() {
+        let descCounts = {};
+        transactions.forEach((t) => {
+          if (!categories.find((c) => c.key === t.type)) {
+            descCounts[t.desc] = (descCounts[t.desc] || 0) + 1;
+          }
+        });
+        let popular = Object.keys(descCounts).find((k) => descCounts[k] >= 3);
+        if (popular)
+          return `🔎 Sering ada transaksi "${popular}". Pertimbangkan buat kategori baru!`;
+        return "";
+      }
+
+      // 13. AI: Saran penghematan berdasarkan kategori terbesar
+      function aiSavingAdvice() {
+        let catTotals = {};
+        transactions.forEach((t) => {
+          if (t.type.startsWith("expense")) {
+            catTotals[t.type] = (catTotals[t.type] || 0) + t.amount;
+          }
+        });
+        let maxCat = Object.keys(catTotals).reduce(
+          (a, b) => (catTotals[a] > catTotals[b] ? a : b),
+          ""
+        );
+        if (maxCat && catTotals[maxCat] > 0) {
+          let catLabel =
+            categories.find((c) => c.key === maxCat)?.label || maxCat;
+          return `💡 Pengeluaran terbesar Anda di kategori <b>${catLabel}</b>. Coba cek dan hemat di kategori ini!`;
+        }
+        return "";
+      }
+
+      // 14. AI: Prediksi saldo akhir bulan (projected balance)
+      function aiProjectedEndOfMonth() {
+        const now = new Date();
+        const daysInMonth = new Date(
+          now.getFullYear(),
+          now.getMonth() + 1,
+          0
+        ).getDate();
+        const today = now.getDate();
+        const income = transactions
+          .filter((t) => t.type === "income" && isThisMonth(t.date))
+          .reduce((a, b) => a + b.amount, 0);
+        const pengeluaran = transactions
+          .filter(
+            (t) =>
+              (t.type.startsWith("expense") ||
+                t.type === "saving" ||
+                t.type === "emergency") &&
+              isThisMonth(t.date)
+          )
+          .reduce((a, b) => a + b.amount, 0);
+        const saldoSaatIni = income - pengeluaran;
+        const rataPengeluaranHarian = pengeluaran / today;
+        const sisaHari = daysInMonth - today;
+        const proyeksiAkhir = saldoSaatIni - rataPengeluaranHarian * sisaHari;
+        if (today > 3) {
+          return `📈 Proyeksi saldo akhir bulan: <b>${formatRupiah(
+            Math.round(proyeksiAkhir)
+          )}</b>`;
+        }
+        return "";
+      }
+
+      // 15. AI: Deteksi transaksi duplikat (duplicate detection)
+      function aiDetectDuplicate() {
+        let dupe = {};
+        let found = [];
+        transactions.forEach((t) => {
+          let key = `${t.desc.toLowerCase()}|${t.amount}|${t.date}|${t.type}`;
+          if (dupe[key]) found.push(t);
+          dupe[key] = true;
+        });
+        if (found.length > 0) {
+          return `⚠️ Ada kemungkinan transaksi duplikat terdeteksi. Silakan cek daftar transaksi Anda!`;
+        }
+        return "";
+      }
+
+      // 16. AI: Saran waktu terbaik menabung (berdasarkan pola pendapatan)
+      function aiBestSavingDay() {
+        let incomeDates = transactions
+          .filter((t) => t.type === "income")
+          .map((t) => new Date(t.date).getDate());
+        if (incomeDates.length < 3) return "";
+        let counts = {};
+        incomeDates.forEach((d) => (counts[d] = (counts[d] || 0) + 1));
+        let bestDay = Object.keys(counts).reduce((a, b) =>
+          counts[a] > counts[b] ? a : b
+        );
+        return `💡 Anda paling sering menerima gaji tanggal <b>${bestDay}</b>. Coba menabung di tanggal tersebut setiap bulan!`;
+      }
+
+      // 17. AI: Saran pengeluaran rutin (recurring expense suggestion)
+      function aiRecurringExpenseSuggestion() {
+        let descMap = {};
+        transactions.forEach((t) => {
+          if (t.type.startsWith("expense")) {
+            let key = t.desc.toLowerCase();
+            descMap[key] = descMap[key] || [];
+            descMap[key].push(t.date);
+          }
+        });
+        let recurring = Object.keys(descMap).find(
+          (k) => descMap[k].length >= 3
+        );
+        if (recurring) {
+          return `🔁 Transaksi "<b>${recurring}</b>" sering muncul. Apakah ini pengeluaran rutin? Pertimbangkan untuk membuat pengingat!`;
+        }
+        return "";
+      }
+
+      // 18. AI: Saran target menabung otomatis berdasarkan rata-rata pengeluaran
+      function aiAutoSavingTarget() {
+        let pengeluaran = transactions.filter(
+          (t) => t.type.startsWith("expense") || t.type === "emergency"
+        );
+        if (pengeluaran.length < 5) return "";
+        let avg =
+          pengeluaran.reduce((a, b) => a + b.amount, 0) / pengeluaran.length;
+        let target = Math.round(avg * 0.2); // 20% dari rata-rata pengeluaran
+        if (target > 0) {
+          return `🎯 Saran target menabung bulan depan: <b>${formatRupiah(
+            target
+          )}</b> (20% dari rata-rata pengeluaran Anda)`;
+        }
+        return "";
+      }
+
+      // 19. AI: Deteksi pengeluaran mendadak besar (big sudden expense)
+      function aiDetectBigExpense() {
+        let pengeluaran = transactions.filter((t) =>
+          t.type.startsWith("expense")
+        );
+        if (pengeluaran.length < 10) return "";
+        let avg =
+          pengeluaran.reduce((a, b) => a + b.amount, 0) / pengeluaran.length;
+        let big = pengeluaran.find((t) => t.amount > 3 * avg);
+        if (big) {
+          return `🚨 Pengeluaran besar terdeteksi: <b>${
+            big.desc
+          }</b> sebesar ${formatRupiah(
+            big.amount
+          )}. Pastikan ini memang perlu!`;
+        }
+        return "";
+      }
+
+      // 20. AI: Saran upgrade kategori jika sering ada transaksi besar di satu kategori
+      function aiSuggestUpgradeCategory() {
+        let catTotals = {};
+        transactions.forEach((t) => {
+          if (t.type.startsWith("expense")) {
+            catTotals[t.type] = (catTotals[t.type] || 0) + t.amount;
+          }
+        });
+        let maxCat = Object.keys(catTotals).reduce(
+          (a, b) => (catTotals[a] > catTotals[b] ? a : b),
+          ""
+        );
+        if (maxCat && catTotals[maxCat] > 0) {
+          let catLabel =
+            categories.find((c) => c.key === maxCat)?.label || maxCat;
+          if (catTotals[maxCat] > 2 * (limits[maxCat] || 0) && limits[maxCat]) {
+            return `⬆️ Pengeluaran kategori <b>${catLabel}</b> sering melebihi limit. Coba cek ulang kebutuhan limit atau upgrade kategori!`;
+          }
+        }
+        return "";
+      }
+
+      // 21. AI: Deteksi transaksi yang sering dihapus (possible mistake)
+      function aiDetectFrequentDelete() {
+        let deleted = JSON.parse(
+          localStorage.getItem("deleted_transactions") || "[]"
+        );
+        let descCounts = {};
+        deleted.forEach((t) => {
+          descCounts[t.desc] = (descCounts[t.desc] || 0) + 1;
+        });
+        let frequent = Object.keys(descCounts).find((k) => descCounts[k] >= 3);
+        if (frequent) {
+          return `❓ Transaksi "${frequent}" sering dihapus. Pastikan tidak terjadi kesalahan pencatatan!`;
+        }
+        return "";
+      }
+
+      // Simpan transaksi yang dihapus ke localStorage untuk fitur di atas
+      const oldDeleteTransaction = window.deleteTransaction;
+      window.deleteTransaction = function (idx) {
+        let deleted = JSON.parse(
+          localStorage.getItem("deleted_transactions") || "[]"
+        );
+        deleted.push(transactions[idx]);
+        localStorage.setItem("deleted_transactions", JSON.stringify(deleted));
+        oldDeleteTransaction(idx);
+      };
+
+      // 22. AI: Saran pengeluaran sehat (healthy spending advice)
+      function aiHealthySpendingAdvice() {
+        let makan = transactions
+          .filter((t) => t.type === "expense-makan")
+          .reduce((a, b) => a + b.amount, 0);
+        let transport = transactions
+          .filter((t) => t.type === "expense-transportasi")
+          .reduce((a, b) => a + b.amount, 0);
+        if (makan > 2 * transport) {
+          return "🍽️ Pengeluaran makan jauh lebih besar dari transportasi. Coba atur pola makan di luar!";
+        }
+        if (transport > 2 * makan) {
+          return "🚌 Pengeluaran transportasi jauh lebih besar dari makan. Coba cek kebutuhan perjalanan Anda!";
+        }
+        return "";
+      }
+
+      // Tambahkan ke renderAIInfo agar tampil di dashboard
+      const oldRenderAIInfo3 = renderAIInfo;
+      renderAIInfo = function () {
+        let info = [];
+        // Fitur AI lama & baru
+        let saving = aiSuggestSaving();
+        if (saving) info.push("💡 " + saving);
+        let limitsMsg = aiLimitReminder();
+        limitsMsg.forEach((l) => info.push("⚠️ " + l));
+        let peak = aiPeakSpendingDay();
+        if (peak) info.push("📅 " + peak);
+        let trend = aiMonthlyTrend();
+        if (trend) info.push(trend);
+        let newCat = aiSuggestNewCategory();
+        if (newCat) info.push(newCat);
+        let advice = aiSavingAdvice();
+        if (advice) info.push(advice);
+        let proj = aiProjectedEndOfMonth();
+        if (proj) info.push(proj);
+        let dupe = aiDetectDuplicate();
+        if (dupe) info.push(dupe);
+        let bestSave = aiBestSavingDay();
+        if (bestSave) info.push(bestSave);
+        let recurring = aiRecurringExpenseSuggestion();
+        if (recurring) info.push(recurring);
+        // Fitur AI tambahan
+        let autoSave = aiAutoSavingTarget();
+        if (autoSave) info.push(autoSave);
+        let bigExp = aiDetectBigExpense();
+        if (bigExp) info.push(bigExp);
+        let upgradeCat = aiSuggestUpgradeCategory();
+        if (upgradeCat) info.push(upgradeCat);
+        let freqDel = aiDetectFrequentDelete();
+        if (freqDel) info.push(freqDel);
+        let healthy = aiHealthySpendingAdvice();
+        if (healthy) info.push(healthy);
+
+        let el = document.getElementById("ai-info");
+        if (!el) {
+          el = document.createElement("div");
+          el.id = "ai-info";
+          el.style.background = "#f1f5f9";
+          el.style.borderRadius = "10px";
+          el.style.padding = "0.7rem 1rem";
+          el.style.margin = "0.7rem 0";
+          el.style.color = "#444";
+          el.style.fontSize = "1rem";
+          document
+            .querySelector(".container")
+            .insertBefore(el, document.querySelector(".diagram"));
+        }
+        el.innerHTML = info.length ? info.join("<br>") : "";
+      };
+    </script>
+  </body>
+</html>
